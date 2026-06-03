@@ -36,7 +36,7 @@ async def register_user(
             detail=USER_ALREADY_EXISTS_ERROR,
         ) from error
 
-    return user
+    return UserDTO.model_validate(user)
 
 
 @router.get(
@@ -46,18 +46,20 @@ async def register_user(
 async def get_user_by_email(
     email: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserDTO:
     """Возвращает пользователя по email."""
     service = UserService(session)
 
     try:
-        return await service.get_user_by_email(email)
+        user = await service.get_user_by_email(email)
     except UserNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=USER_NOT_FOUND_ERROR,
         ) from error
+
+    return UserDTO.model_validate(user)
 
 
 @router.get(
@@ -67,18 +69,20 @@ async def get_user_by_email(
 async def get_user_by_id(
     user_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserDTO:
     """Возвращает пользователя по ID."""
     service = UserService(session)
 
     try:
-        return await service.get_user_by_id(user_id)
+        user = await service.get_user_by_id(user_id)
     except UserNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=USER_NOT_FOUND_ERROR,
         ) from error
+
+    return UserDTO.model_validate(user)
 
 
 @router.put(
@@ -94,9 +98,11 @@ async def update_user(
     service = UserService(session)
 
     try:
-        return await service.update_user(current_user, user_data)
+        user = await service.update_user(current_user, user_data)
     except UserAlreadyExistsError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=USER_ALREADY_EXISTS_ERROR,
         ) from error
+
+    return UserDTO.model_validate(user)

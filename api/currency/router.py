@@ -23,11 +23,13 @@ router = APIRouter(prefix='/currencies', tags=['currencies'])
 )
 async def list_currencies(
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[CurrencyDTO]:
     """Возвращает список валют."""
     service = CurrencyService(session)
-    return await service.list_currencies()
+    currencies = await service.list_currencies()
+
+    return [CurrencyDTO.model_validate(currency) for currency in currencies]
 
 
 @router.get(
@@ -37,18 +39,20 @@ async def list_currencies(
 async def get_latest_rate(
     currency_code: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> ExchangeRateDTO:
     """Возвращает последний курс валюты."""
     service = CurrencyService(session)
 
     try:
-        return await service.get_latest_rate(currency_code)
+        rate = await service.get_latest_rate(currency_code)
     except CurrencyNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=CURRENCY_NOT_FOUND_ERROR,
         ) from error
+
+    return ExchangeRateDTO.model_validate(rate)
 
 
 @router.get(
@@ -60,13 +64,13 @@ async def get_rate_history(
     startdate: Annotated[date, Query()],
     enddate: Annotated[date, Query()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ExchangeRateDTO]:
     """Возвращает историю курсов валюты за период."""
     service = CurrencyService(session)
 
     try:
-        return await service.get_rate_history(
+        rates = await service.get_rate_history(
             target_code=currency_code,
             start_date=startdate,
             end_date=enddate,
@@ -77,6 +81,8 @@ async def get_rate_history(
             detail=CURRENCY_NOT_FOUND_ERROR,
         ) from error
 
+    return [ExchangeRateDTO.model_validate(rate) for rate in rates]
+
 
 @router.get(
     '/{currency_code}/all',
@@ -85,15 +91,17 @@ async def get_rate_history(
 async def get_rates_for_currency(
     currency_code: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    current_user: Annotated[User, Depends(get_current_user)],
+    _current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ExchangeRateDTO]:
     """Возвращает всю историю курсов валюты."""
     service = CurrencyService(session)
 
     try:
-        return await service.get_rates_for_currency(currency_code)
+        rates = await service.get_rates_for_currency(currency_code)
     except CurrencyNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=CURRENCY_NOT_FOUND_ERROR,
         ) from error
+
+    return [ExchangeRateDTO.model_validate(rate) for rate in rates]
