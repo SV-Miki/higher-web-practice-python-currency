@@ -7,4 +7,20 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
+venv/
+
+# Local databases
+currency.db
+*.db
+
+# IDE
+.idea/
+
+# Environment variables
+.env
+
+# Tool caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/

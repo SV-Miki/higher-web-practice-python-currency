@@ -1,12 +1,13 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
+"""Scrapy items для валют."""
 
 import scrapy
 
 
-class ParserItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class CurrencyItem(scrapy.Item):
+    """Item с данными валюты из XML ЦБ РФ."""
+
+    code = scrapy.Field()
+    name = scrapy.Field()
+    nominal = scrapy.Field()
+    rate_to_rub = scrapy.Field()
+    rate_date = scrapy.Field()

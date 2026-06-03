@@ -1,0 +1,9 @@
+venv
+.venv
+__pycache__
+*.pyc
+.git
+.idea
+currency.db
+.pytest_cache
+.ruff_cache
