@@ -29,9 +29,3 @@ class UserDTO(BaseModel):
     email: EmailStr
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class UserWithPasswordDTO(UserDTO):
-    """Схема пользователя с хешем пароля."""
-
-    password_hash: str

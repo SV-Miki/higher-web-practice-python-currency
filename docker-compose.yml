@@ -3,13 +3,17 @@ services:
     image: postgres:16-alpine
     container_name: currency_db
     environment:
-      POSTGRES_DB: currency
-      POSTGRES_USER: currency_user
-      POSTGRES_PASSWORD: currency_password
+      POSTGRES_DB: ${POSTGRES_DB:-currency}
+      POSTGRES_USER: ${POSTGRES_USER:-currency_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-currency_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U currency_user -d currency"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"",
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -22,8 +26,8 @@ services:
       --host 0.0.0.0
       --port 8000
     environment:
-      DATABASE_URL: postgresql+asyncpg://currency_user:currency_password@db:5432/currency
-      SECRET_KEY: CHANGE_ME_DOCKER_SECRET_KEY
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://currency_user:currency_password@db:5432/currency}
+      SECRET_KEY: ${SECRET_KEY:-CHANGE_ME_DOCKER_SECRET_KEY}
     ports:
       - "8001:8000"
     depends_on:
@@ -43,8 +47,8 @@ services:
       done
       "
     environment:
-      DATABASE_URL: postgresql+asyncpg://currency_user:currency_password@db:5432/currency
-      SECRET_KEY: CHANGE_ME_DOCKER_SECRET_KEY
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://currency_user:currency_password@db:5432/currency}
+      SECRET_KEY: ${SECRET_KEY:-CHANGE_ME_DOCKER_SECRET_KEY}
     depends_on:
       db:
         condition: service_healthy

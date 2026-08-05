@@ -14,11 +14,11 @@ from domain.currency.dto import CurrencyDTO, ExchangeRateDTO
 from domain.currency.service import CurrencyService
 from domain.users.models import User
 
-router = APIRouter(prefix='/currencies', tags=['currencies'])
+router = APIRouter(prefix="/currencies", tags=["currencies"])
 
 
 @router.get(
-    '',
+    "",
     response_model=list[CurrencyDTO],
 )
 async def list_currencies(
@@ -33,7 +33,7 @@ async def list_currencies(
 
 
 @router.get(
-    '/{currency_code}',
+    "/{currency_code}",
     response_model=ExchangeRateDTO,
 )
 async def get_latest_rate(
@@ -56,24 +56,30 @@ async def get_latest_rate(
 
 
 @router.get(
-    '/{currency_code}/history',
+    "/{currency_code}/history",
     response_model=list[ExchangeRateDTO],
 )
 async def get_rate_history(
     currency_code: str,
-    startdate: Annotated[date, Query()],
-    enddate: Annotated[date, Query()],
+    start_date: Annotated[date, Query()],
+    end_date: Annotated[date, Query()],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ExchangeRateDTO]:
     """Возвращает историю курсов валюты за период."""
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Start date must not be later than end date",
+        )
+
     service = CurrencyService(session)
 
     try:
         rates = await service.get_rate_history(
             target_code=currency_code,
-            start_date=startdate,
-            end_date=enddate,
+            start_date=start_date,
+            end_date=end_date,
         )
     except CurrencyNotFoundError as error:
         raise HTTPException(
@@ -85,7 +91,7 @@ async def get_rate_history(
 
 
 @router.get(
-    '/{currency_code}/all',
+    "/{currency_code}/all",
     response_model=list[ExchangeRateDTO],
 )
 async def get_rates_for_currency(

@@ -1,7 +1,5 @@
 """Pydantic-схемы авторизации."""
 
-from datetime import datetime
-
 from pydantic import BaseModel, EmailStr
 
 
@@ -23,13 +21,4 @@ class Token(BaseModel):
 
     access_token: str
     refresh_token: str
-    token_type: str = 'bearer'
-
-
-class TokenPayload(BaseModel):
-    """Схема полезной нагрузки токена."""
-
-    user_id: int
-    email: EmailStr
-    token_type: str
-    exp: datetime
+    token_type: str = "bearer"
