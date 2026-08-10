@@ -40,7 +40,6 @@ Currency Service - API-сервис для получения курсов ва�
 - Docker Compose
 - Uvicorn
 - Ruff
-- Black
 
 ## Структура проекта
 
@@ -77,10 +76,10 @@ higher-web-practice-python-currency/
 │       ├── spiders/
 │       │   └── cbr.py
 │       ├── items.py
-│       ├── middlewares.py
 │       ├── pipelines.py
 │       └── settings.py
 ├── .dockerignore
+├── .env.example
 ├── .gitignore
 ├── Dockerfile
 ├── docker-compose.yml
@@ -169,7 +168,24 @@ Pipeline сохраняет данные в базу:
 
 Docker-запуск является основным способом запуска проекта.
 
-### 1. Собрать и запустить контейнеры
+### 1. Настроить переменные окружения
+
+Скопируйте пример файла переменных окружения:
+
+```bash
+cp .env.example .env
+```
+
+При необходимости измените значения в созданном файле `.env`, особенно:
+
+```env
+POSTGRES_PASSWORD
+SECRET_KEY
+```
+
+Если файл `.env` не создан, Docker Compose использует значения по умолчанию из `docker-compose.yml`.
+
+### 2. Собрать и запустить контейнеры
 
 ```bash
 docker compose up --build
@@ -189,7 +205,7 @@ parser
 
 Парсер запускается сразу после старта контейнеров, загружает курсы валют и затем повторяет запуск один раз в сутки.
 
-### 2. Swagger-документация
+### 3. Swagger-документация
 
 При Docker-запуске Swagger доступен по адресу:
 
@@ -199,7 +215,7 @@ http://127.0.0.1:8001/docs
 
 Внутри контейнера приложение работает на порту `8000`, но наружу проброшено на порт `8001`, чтобы не конфликтовать с локальным запуском.
 
-### 3. Проверить статус контейнеров
+### 4. Проверить статус контейнеров
 
 ```bash
 docker compose ps
@@ -213,7 +229,7 @@ currency_db
 currency_parser
 ```
 
-### 4. Проверить данные в PostgreSQL
+### 5. Проверить данные в PostgreSQL
 
 Проверить количество валют:
 
@@ -233,7 +249,7 @@ docker compose exec db psql -U currency_user -d currency -c "SELECT COUNT(*) FRO
 docker compose exec db psql -U currency_user -d currency -c "SELECT c.code, c.name, r.rate_to_rub, r.rate_date FROM exchange_rates r JOIN currencies c ON c.id = r.currency_id WHERE c.code = 'USD';"
 ```
 
-### 5. Остановить контейнеры
+### 6. Остановить контейнеры
 
 ```bash
 docker compose down
@@ -261,10 +277,10 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-#### Windows
+#### Windows PowerShell
 
-```bash
-source venv/Scripts/activate
+```powershell
+.\venv\Scripts\Activate.ps1
 ```
 
 ### 3. Установить зависимости
@@ -385,7 +401,7 @@ http://127.0.0.1:8001/openapi.json
 |-------|-----------------------------------------------------------------|------------------------------------|
 | GET   | `/currencies`                                                   | Получить список всех валют         |
 | GET   | `/currencies/{currency_code}`                                   | Получить последний курс валюты     |
-| GET   | `/currencies/{currency_code}/history?startdate=...&enddate=...` | Получить историю курсов за период  |
+| GET   | `/currencies/{currency_code}/history?start_date=...&end_date=...` | Получить историю курсов за период  |
 | GET   | `/currencies/{currency_code}/all`                               | Получить всю историю курсов валюты |
 
 Все эндпоинты валют доступны только авторизованным пользователям.
@@ -432,7 +448,7 @@ Bearer <access_token>
 GET /currencies
 GET /currencies/USD
 GET /currencies/USD/all
-GET /currencies/USD/history?startdate=2026-06-01&enddate=2026-06-10
+GET /currencies/USD/history?start_date=2026-06-01&end_date=2026-06-10
 ```
 
 8. Проверьте ошибку для несуществующей валюты:
@@ -448,6 +464,14 @@ GET /currencies/XXX
   "detail": "Currency not found"
 }
 ```
+
+9. Проверьте ошибку некорректного диапазона дат:
+
+```text
+GET /currencies/USD/history?start_date=2026-06-10&end_date=2026-06-01
+```
+
+Ожидаемый статус ответа - `422 Unprocessable Entity`.
 
 ## Примеры запросов
 
@@ -570,7 +594,7 @@ GET /currencies/USD
 ### Получить историю USD за период
 
 ```http request
-GET /currencies/USD/history?startdate=2026-06-01&enddate=2026-06-10
+GET /currencies/USD/history?start_date=2026-06-01&end_date=2026-06-10
 ```
 
 Пример ответа:
@@ -678,20 +702,32 @@ GET /currencies/USD/all
 }
 ```
 
+Если начальная дата периода позже конечной:
+
+```json
+{
+  "detail": "Start date must not be later than end date"
+}
+```
+
 ## Переменные окружения
 
 Проект поддерживает настройку через переменные окружения.
 
-| Переменная     | Описание                      | Значение по умолчанию               |
-|----------------|-------------------------------|-------------------------------------|
-| `DATABASE_URL` | URL подключения к базе данных | `sqlite+aiosqlite:///./currency.db` |
-| `SECRET_KEY`   | Секретный ключ для JWT        | `CHANGE_ME_SECRET_KEY`              |
+| Переменная          | Описание                        | Значение по умолчанию для Docker |
+|---------------------|---------------------------------|----------------------------------|
+| `POSTGRES_DB`       | Название базы данных PostgreSQL | `currency`                       |
+| `POSTGRES_USER`     | Пользователь PostgreSQL         | `currency_user`                  |
+| `POSTGRES_PASSWORD` | Пароль пользователя PostgreSQL  | `currency_password`              |
+| `DATABASE_URL`      | URL подключения к базе данных   | `postgresql+asyncpg://currency_user:currency_password@db:5432/currency` |
+| `SECRET_KEY`        | Секретный ключ для JWT          | `CHANGE_ME_DOCKER_SECRET_KEY`    |
 
-В Docker Compose используются значения:
+Пример значений находится в файле `.env.example`.
+
+При локальном запуске без Docker, если `DATABASE_URL` не задан, используется SQLite:
 
 ```text
-DATABASE_URL=postgresql+asyncpg://currency_user:currency_password@db:5432/currency
-SECRET_KEY=CHANGE_ME_DOCKER_SECRET_KEY
+sqlite+aiosqlite:///./currency.db
 ```
 
 ## Проверка проекта
@@ -708,17 +744,17 @@ python -m compileall core domain api parser main.py
 python -m ruff check .
 ```
 
-### Проверка Black
+### Проверка форматирования Ruff
 
 ```bash
-python -m black --check .
+python -m ruff format --check .
 ```
 
-### Автоформатирование
+### Автоисправление и форматирование
 
 ```bash
 python -m ruff check . --fix
-python -m black .
+python -m ruff format .
 ```
 
 ### Проверка Docker Compose
