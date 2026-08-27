@@ -44,7 +44,7 @@ Currency Service - API-сервис для получения курсов ва�
 ## Структура проекта
 
 ```text
-higher-web-practice-python-currency/
+currency-service/
 ├── api/
 │   ├── auth/
 │   │   └── router.py
